@@ -17,6 +17,7 @@
 **
 ****************************************************************************/
 
+#include <thread>
 #ifdef _MSC_VER
 #pragma warning( disable : 4503 4355 4786 )
 #else
@@ -24,7 +25,9 @@
 #endif
 
 #include "quickfix/FileStore.h"
-#include "quickfix/SocketInitiator.h"
+//#include "quickfix/SocketInitiator.h"
+#include "quickfix\SocketAcceptor.h"
+//#include "quickfix/Acceptor.h"
 #ifdef HAVE_SSL
 #include "quickfix/ThreadedSSLSocketInitiator.h"
 #include "quickfix/SSLSocketInitiator.h"
@@ -56,7 +59,8 @@ int main( int argc, char** argv )
   }
 #endif
 
-  FIX::Initiator * initiator = 0;
+  FIX::Acceptor * acceptor = 0;
+
   try
   {
     FIX::SessionSettings settings( file );
@@ -71,19 +75,24 @@ int main( int argc, char** argv )
       initiator = new FIX::SSLSocketInitiator ( application, storeFactory, settings, logFactory );
     else
 #endif
-    initiator = new FIX::SocketInitiator( application, storeFactory, settings, logFactory );
+    acceptor = new FIX::SocketAcceptor( application, storeFactory, settings, logFactory );
+	
 
-    initiator->start();
-    application.run();
-    initiator->stop();
-    delete initiator;
+	acceptor->start();
+	while (true) {
+		std::cout << "Sleeping in main thread\n";
+		std::this_thread::sleep_for(std::chrono::seconds(10));
+	}
+    //application.run();
+	acceptor->stop();
+    delete acceptor;
 
     return 0;
   }
   catch ( std::exception & e )
   {
     std::cout << e.what();
-    delete initiator;
+    delete acceptor;
     return 1;
   }
 }
